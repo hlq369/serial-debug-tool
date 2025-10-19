@@ -377,134 +377,109 @@ setInterval(function(){
     </div>
 
     <script>
-        let port = null;
-        let reader = null;
-        let writer = null;
+      /* ************  只改动了下面这块 JS  ************ */
+        let port      = null;
+        let reader    = null;
+        let writer    = null;
+
+        /* 保存两个 pipe 的 Promise，用于断开时统一释放 */
+        let readableStreamClosed = null;
+        let writableStreamClosed = null;
+
         let loopSendInterval = null;
-        let receiveBuffer = '';
-        let timeoutTimer = null;
+        let receiveBuffer    = '';
+        let timeoutTimer     = null;
 
-        // 循环发送复选框事件
-        document.getElementById('loopSend').addEventListener('change', function() {
-            document.getElementById('intervalGroup').style.display = this.checked ? 'block' : 'none';
-        });
-
-        // 连接串口
+        /* ================ 连接 ================ */
         async function connectSerial() {
             try {
-                // 请求串口权限
                 port = await navigator.serial.requestPort();
-                
-                // 获取配置参数
-                const baudRate = parseInt(document.getElementById('baudRate').value);
-                const dataBits = parseInt(document.getElementById('dataBits').value);
-                const stopBits = parseInt(document.getElementById('stopBits').value);
-                const parity = document.getElementById('parity').value;
-                const bufferSize = parseInt(document.getElementById('bufferSize').value);
-                const flowControl = document.getElementById('flowControl').value;
+                const opts = {
+                    baudRate : parseInt(document.getElementById('baudRate').value),
+                    dataBits : parseInt(document.getElementById('dataBits').value),
+                    stopBits : parseInt(document.getElementById('stopBits').value),
+                    parity   : document.getElementById('parity').value,
+                    bufferSize: parseInt(document.getElementById('bufferSize').value),
+                    flowControl: document.getElementById('flowControl').value
+                };
+                await port.open(opts);
 
-                // 打开串口
-                await port.open({
-                    baudRate: baudRate,
-                    dataBits: dataBits,
-                    stopBits: stopBits,
-                    parity: parity,
-                    bufferSize: bufferSize,
-                    flowControl: flowControl
-                });
+                /* 写通道 */
+                const encoder        = new TextEncoderStream();
+                writableStreamClosed = encoder.readable.pipeTo(port.writable);
+                writer               = encoder.writable.getWriter();
 
-                // 更新UI状态
+                /* 读通道 */
+                const decoder        = new TextDecoderStream();
+                readableStreamClosed = port.readable.pipeTo(decoder.writable);
+                reader               = decoder.readable.getReader();
+
+                /* UI */
                 document.getElementById('portStatus').value = '已连接';
                 document.getElementById('portStatus').style.color = '#27ae60';
-                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('connectBtn').disabled    = true;
                 document.getElementById('disconnectBtn').disabled = false;
-
                 addLog('系统', '串口连接成功', 'system');
 
-                // 开始读取数据
-                startReading();
-
-            } catch (error) {
-                addLog('错误', '连接失败: ' + error.message, 'error');
-                console.error('连接串口失败:', error);
+                readLoop();          // 开始收数据
+            } catch (e) {
+                addLog('错误', '连接失败: ' + e.message, 'error');
             }
         }
 
-        // 断开串口连接
+        /* ================ 断开 ================ */
         async function disconnectSerial() {
-            try {
-                if (reader) {
-                    await reader.cancel();
-                    reader = null;
-                }
-                if (writer) {
-                    await writer.close();
-                    writer = null;
-                }
-                if (port) {
-                    await port.close();
-                    port = null;
-                }
-
-                // 停止循环发送
-                if (loopSendInterval) {
-                    clearInterval(loopSendInterval);
-                    loopSendInterval = null;
-                }
-
-                // 更新UI状态
-                document.getElementById('portStatus').value = '未连接';
-                document.getElementById('portStatus').style.color = '#e74c3c';
-                document.getElementById('connectBtn').disabled = false;
-                document.getElementById('disconnectBtn').disabled = true;
-
-                addLog('系统', '串口已断开', 'system');
-
-            } catch (error) {
-                addLog('错误', '断开连接失败: ' + error.message, 'error');
-                console.error('断开连接失败:', error);
-            }
-        }
-
-        // 开始读取数据
-        async function startReading() {
             if (!port) return;
 
-            try {
-                const decoder = new TextDecoderStream();
-                const readableStreamClosed = port.readable.pipeTo(decoder.writable);
-                reader = decoder.readable.getReader();
+            /* 1. 停读 */
+            if (reader) {
+                await reader.cancel();
+                await readableStreamClosed.catch(() => {});
+                reader = null;
+            }
+            /* 2. 停写 */
+            if (writer) {
+                await writer.close();
+                await writableStreamClosed;
+                writer = null;
+            }
+            /* 3. 关端口 */
+            await port.close();
+            port = null;
 
-                while (true) {
+            /* 4. 停循环发送 */
+            if (loopSendInterval) {
+                clearInterval(loopSendInterval);
+                loopSendInterval = null;
+            }
+
+            /* UI */
+            document.getElementById('portStatus').value = '未连接';
+            document.getElementById('portStatus').style.color = '#e74c3c';
+            document.getElementById('connectBtn').disabled    = false;
+            document.getElementById('disconnectBtn').disabled = true;
+            addLog('系统', '串口已断开', 'system');
+        }
+
+        /* ================ 读循环 ================ */
+        async function readLoop() {
+            while (true) {
+                try {
                     const { value, done } = await reader.read();
-                    if (done) {
-                        break;
-                    }
-                    if (value) {
-                        receiveData(value);
-                    }
+                    if (done) break;
+                    if (value) receiveData(value);
+                } catch (e) {
+                    break;   // 正常取消
                 }
-            } catch (error) {
-                addLog('错误', '读取数据失败: ' + error.message, 'error');
-                console.error('读取数据失败:', error);
             }
         }
 
-        // 接收数据处理
+        /* ================ 接收处理 ================ */
         function receiveData(data) {
             const timeout = parseInt(document.getElementById('timeout').value);
-            
-            // 添加到缓冲区
             receiveBuffer += data;
-            
-            // 清除之前的超时定时器
-            if (timeoutTimer) {
-                clearTimeout(timeoutTimer);
-            }
-            
-            // 设置新的超时定时器
+            if (timeoutTimer) clearTimeout(timeoutTimer);
             timeoutTimer = setTimeout(() => {
-                // 超时后处理数据
                 if (receiveBuffer.length > 0) {
                     addLog('RX', receiveBuffer, 'rx');
                     receiveBuffer = '';
@@ -512,119 +487,58 @@ setInterval(function(){
             }, timeout);
         }
 
-        // 发送数据
+        /* ================ 发送 ================ */
         async function sendData() {
-            if (!port || !writer) {
+            if (!writer) {          // 只需判断 writer
                 addLog('错误', '串口未连接', 'error');
                 return;
             }
-
-            const content = document.getElementById('sendContent').value;
-            if (!content) {
-                addLog('错误', '发送内容不能为空', 'error');
-                return;
-            }
+            let content = document.getElementById('sendContent').value;
+            if (!content) return;
 
             try {
-                let dataToSend = content;
-                
-                // HEX发送
+                let toSend = content;
                 if (document.getElementById('hexSend').checked) {
-                    // 将十六进制字符串转换为字节数组
-                    const hexArray = content.match(/.{1,2}/g) || [];
-                    const bytes = new Uint8Array(hexArray.map(byte => parseInt(byte, 16)));
-                    dataToSend = bytes;
-                } else {
-                    // 普通文本发送
-                    if (document.getElementById('addNewline').checked) {
-                        dataToSend += '\r\n';
-                    }
+                    const hexArr = content.match(/.{1,2}/g) || [];
+                    toSend = new Uint8Array(hexArr.map(b => parseInt(b, 16)));
+                } else if (document.getElementById('addNewline').checked) {
+                    toSend += '\r\n';
                 }
-
-                // 创建写入器
-                if (!writer) {
-                    const encoder = new TextEncoderStream();
-                    const writableStreamClosed = encoder.readable.pipeTo(port.writable);
-                    writer = encoder.writable.getWriter();
-                }
-
-                // 发送数据
-                if (document.getElementById('hexSend').checked) {
-                    await writer.write(dataToSend);
-                } else {
-                    await writer.write(dataToSend);
-                }
-
+                await writer.write(toSend);
                 addLog('TX', content, 'tx');
 
-                // 循环发送
+                /* 循环发送 */
                 if (document.getElementById('loopSend').checked) {
                     const interval = parseInt(document.getElementById('sendInterval').value);
-                    if (loopSendInterval) {
-                        clearInterval(loopSendInterval);
-                    }
-                    loopSendInterval = setInterval(() => {
-                        sendData();
-                    }, interval);
+                    if (loopSendInterval) clearInterval(loopSendInterval);
+                    loopSendInterval = setInterval(() => sendData(), interval);
                 }
-
-            } catch (error) {
-                addLog('错误', '发送失败: ' + error.message, 'error');
-                console.error('发送数据失败:', error);
+            } catch (e) {
+                addLog('错误', '发送失败: ' + e.message, 'error');
             }
         }
 
-        // 快速发送
-        function quickSend(button) {
-            const input = button.previousElementSibling;
-            const content = input.value;
-            if (content) {
-                document.getElementById('sendContent').value = content;
+        /* ================ 其余函数 ================ */
+        function quickSend(btn) {
+            const input = btn.previousElementSibling;
+            if (input.value) {
+                document.getElementById('sendContent').value = input.value;
                 sendData();
             }
         }
-
-        // 添加快速发送分组
         function addQuickSend() {
-            const container = document.getElementById('quickSendGroups');
             const div = document.createElement('div');
             div.className = 'send-group';
             div.innerHTML = `
                 <input type="text" placeholder="快速发送内容" class="quick-send-content">
-                <button onclick="quickSend(this)">发送</button>
-            `;
-            container.appendChild(div);
+                <button onclick="quickSend(this)">发送</button>`;
+            document.getElementById('quickSendGroups').appendChild(div);
         }
-
-        // 清空发送内容
-        function clearSend() {
-            document.getElementById('sendContent').value = '';
-        }
-
-        // 添加日志
-        function addLog(type, content, className) {
-            const logContainer = document.getElementById('logContainer');
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry log-${className}`;
-            logEntry.textContent = `[${timestamp}] ${type}: ${content}`;
-            logContainer.appendChild(logEntry);
-
-            // 自动滚动
-            if (document.getElementById('autoScroll').checked) {
-                logContainer.scrollTop = logContainer.scrollHeight;
-            }
-        }
-
-        // 清空日志
-        function clearLog() {
-            document.getElementById('logContainer').innerHTML = '';
-        }
-
-        // 保存日志
+        function clearSend() { document.getElementById('sendContent').value = ''; }
+        function clearLog()  { document.getElementById('logContainer').innerHTML = ''; }
         function saveLog() {
-            const logContent = document.getElementById('logContainer').textContent;
-            const blob = new Blob([logContent], { type: 'text/plain' });
+            const txt = document.getElementById('logContainer').textContent;
+            const blob = new Blob([txt], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -632,18 +546,16 @@ setInterval(function(){
             a.click();
             URL.revokeObjectURL(url);
         }
-
-        // 页面卸载时断开连接
-        window.addEventListener('beforeunload', () => {
-            if (port) {
-                disconnectSerial();
-            }
-        });
-
-        // 检查浏览器支持
-        if (!navigator.serial) {
-            alert('您的浏览器不支持Web Serial API，请使用Chrome 89或更高版本。');
+        function addLog(type, content, cls) {
+            const box = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${cls}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${type}: ${content}`;
+            box.appendChild(entry);
+            if (document.getElementById('autoScroll').checked) box.scrollTop = box.scrollHeight;
         }
+        window.addEventListener('beforeunload', () => { if (port) disconnectSerial(); });
+        if (!navigator.serial) alert('您的浏览器不支持 Web Serial API，请使用 Chrome 89 或更高版本。');
     </script>
 </body>
 </html>
