@@ -650,6 +650,9 @@ setInterval(function(){
         const MIN_WRITE_INTERVAL = 12000; // 12秒 = 每分钟5次写入
         const MIN_COMMAND_INTERVAL = 12000; // 12秒 = 每分钟5次命令
 
+        // 控制命令执行状态跟踪
+        let lastExecutedCommand = { command: '', timestamp: 0 };
+
         // 循环发送显示控制
         document.getElementById('loopSend').addEventListener('change', function() {
             document.getElementById('intervalGroup').style.display = this.checked ? 'block' : 'none';
@@ -835,7 +838,7 @@ setInterval(function(){
                 addLog('同步', `变量已同步: 光强度=${AAA.toFixed(1)}, 水温=${BBB.toFixed(1)}, pH=${CCC.toFixed(1)}, DO=${DDD.toFixed(1)}`, 'system');
             }
             
-            // 检查并执行控制命令
+            // 检查并执行控制命令 - 修复版
             if (data.controlCommand && 
                 data.controlCommand.timestamp && 
                 data.controlCommand.command &&
@@ -844,8 +847,17 @@ setInterval(function(){
                 const currentTime = Date.now();
                 const commandTime = data.controlCommand.timestamp;
                 
-                if (currentTime - commandTime < 5000) {
+                // 防止重复执行相同的命令（10秒内）
+                if (currentTime - commandTime < 10000 && 
+                    (data.controlCommand.command !== lastExecutedCommand.command || 
+                     commandTime !== lastExecutedCommand.timestamp)) {
+                    
+                    addLog('同步', `检测到新控制命令: ${data.controlCommand.command}`, 'system');
                     executeControlCommand(data.controlCommand.command);
+                    lastExecutedCommand = {
+                        command: data.controlCommand.command,
+                        timestamp: commandTime
+                    };
                 }
             }
         }
@@ -872,15 +884,25 @@ setInterval(function(){
 
         /* ================ 发送控制命令 ================ */
         async function sendControlCommand(cmd) {
+            // 如果当前设备连接了串口，直接发送
             if (writer) {
                 try {
                     await writer.write(cmd);
-                    addLog('TX', cmd, 'tx');
+                    
+                    let commandDesc = '';
+                    if (cmd === 'AA1') commandDesc = '光强度';
+                    else if (cmd === 'AA2') commandDesc = '水温';
+                    else if (cmd === 'AA3') commandDesc = 'pH';
+                    else if (cmd === 'AA4') commandDesc = 'DO';
+                    else commandDesc = cmd;
+                    
+                    addLog('TX', `本地执行: ${commandDesc}`, 'tx');
                 } catch (e) {
                     addLog('错误', '发送失败: ' + e.message, 'error');
                 }
             }
             
+            // 无论是否连接串口，都将命令同步到JSONBin.io
             try {
                 await syncControlCommand(cmd);
             } catch (e) {
@@ -898,21 +920,9 @@ setInterval(function(){
             
             try {
                 lastCommandTime = now;
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: {
-                        'X-Master-Key': JSONBIN_API_KEY,
-                        'X-Bin-Meta': 'false'
-                    }
-                });
                 
-                if (!response.ok) {
-                    throw new Error(`获取数据失败! status: ${response.status}`);
-                }
-                
-                const currentData = await response.json();
-                
-                const updatedData = {
-                    ...currentData,
+                // 直接创建包含控制命令的数据
+                const commandData = {
                     controlCommand: {
                         command: command,
                         timestamp: Date.now(),
@@ -926,7 +936,7 @@ setInterval(function(){
                         'Content-Type': 'application/json',
                         'X-Master-Key': JSONBIN_API_KEY
                     },
-                    body: JSON.stringify(updatedData)
+                    body: JSON.stringify(commandData)
                 });
                 
                 if (!updateResponse.ok) {
@@ -964,40 +974,10 @@ setInterval(function(){
                 else if (command === 'AA4') commandDesc = 'DO';
                 else commandDesc = command;
                 
-                addLog('TX', `同步执行: ${commandDesc}`, 'tx');
+                addLog('TX', `远程执行: ${commandDesc}`, 'tx');
                 
-                setTimeout(() => clearControlCommand(), 1000);
             } catch (e) {
                 addLog('错误', '执行控制命令失败: ' + e.message, 'error');
-            }
-        }
-
-        /* ================ 清除控制命令 ================ */
-        async function clearControlCommand() {
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: {
-                        'X-Master-Key': JSONBIN_API_KEY,
-                        'X-Bin-Meta': 'false'
-                    }
-                });
-                
-                if (!response.ok) return;
-                
-                const currentData = await response.json();
-                const { controlCommand, ...dataWithoutCommand } = currentData;
-                
-                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify(dataWithoutCommand)
-                });
-                
-            } catch (error) {
-                console.error('清除控制命令失败:', error);
             }
         }
 
