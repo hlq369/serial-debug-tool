@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web串口调试助手 - 多设备同步版</title>
+    <title>鱼池监控系统 - JMU  多设备同步版</title>
     <meta name="description" content="基于Web Serial API的在线串口调试工具，支持多设备变量同步">
     <style>
         * {
@@ -48,7 +48,7 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1fr 2fr; /* 调整左右列比例，日志栏更宽 */
             gap: 12px;
             margin-bottom: 12px;
         }
@@ -86,7 +86,6 @@
         }
 
         select, input[type="number"], input[type="text"], textarea {
-            width: 100%;
             padding: 6px 8px;
             border: 1px solid #ddd;
             border-radius: 3px;
@@ -202,7 +201,7 @@
         }
 
         #logContainer {
-            height: 150px;
+            height: 680px; /* 串口日志显示框高度 */
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 3px;
@@ -264,6 +263,7 @@
         #sendContent {
             height: 35px;
             resize: none;
+            width: 100%; /* 发送数据输入框宽度 */
         }
 
         .config-section {
@@ -336,7 +336,7 @@
         }
 
         .api-config-row input {
-            width: 200px;
+            width: 300px; /* Bin ID输入框宽度 */
         }
 
         .api-config-row span {
@@ -345,7 +345,7 @@
 
         .serial-config-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr); /* 三列布局，更紧凑 */
             gap: 8px;
         }
 
@@ -354,7 +354,19 @@
         }
 
         .serial-config-grid select {
-            width: 100%;
+            width: 150px; /* 串口配置下拉框宽度 */
+        }
+
+        #portStatus {
+            width: 150px; /* 串口状态显示框宽度 */
+        }
+
+        #timeout {
+            width: 150px; /* 分包超时输入框宽度 */
+        }
+
+        .quick-send-content {
+            width: 150px; /* 快速发送输入框宽度 */
         }
 
         @media (max-width: 768px) {
@@ -389,7 +401,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Web串口调试助手 - 多设备同步版</h1>
+            <h1>鱼池监控系统 - JMU 多设备同步版</h1>
             <p>基于Web Serial API的在线串口调试工具 - 支持多设备变量同步</p>
             <div style="margin-top: 8px;">
                 <span id="syncStatus" class="sync-status sync-disconnected"></span>
@@ -546,7 +558,7 @@
 
                     <div class="form-group" id="intervalGroup" style="display: none;">
                         <label for="sendInterval">发送间隔(MS):</label>
-                        <input type="number" id="sendInterval" value="1000" min="100">
+                        <input type="number" id="sendInterval" value="1000" min="100" style="width: 150px;"> <!-- 发送间隔输入框宽度 -->
                     </div>
 
                     <div class="form-group">
@@ -615,7 +627,7 @@ setInterval(function(){
         </div>
         
         <div class="footer">
-            <p>Web串口调试助手 &copy; 2023 - 基于Web Serial API构建</p>
+            <p>鱼池监控系统 v1.0&copy; 2025.10 - 基于Web Serial API构建</p>
         </div>
     </div>
 
