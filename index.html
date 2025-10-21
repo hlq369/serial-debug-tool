@@ -453,10 +453,10 @@
             
             <h3>控制按钮</h3>
             <div class="control-buttons">
-                <button class="control-btn" onclick="sendControlCommand('AA1')">LED灯</button> <!-- AA1对应光强度值 -->
-                <button class="control-btn" onclick="sendControlCommand('AA2')">加热器</button> <!-- AA2对应水温 -->
-                <button class="control-btn" onclick="sendControlCommand('AA3')">酸度调节</button> <!-- AA3对应pH -->
-                <button class="control-btn" onclick="sendControlCommand('AA4')">增氧机</button> <!-- AA4对应DO -->
+                <button class="control-btn" onclick="sendControlCommand('AA1')">光强度</button> <!-- AA1对应光强度值 -->
+                <button class="control-btn" onclick="sendControlCommand('AA2')">水温</button> <!-- AA2对应水温 -->
+                <button class="control-btn" onclick="sendControlCommand('AA3')">pH</button> <!-- AA3对应pH -->
+                <button class="control-btn" onclick="sendControlCommand('AA4')">DO</button> <!-- AA4对应DO -->
             </div>
         </div>
 
@@ -819,10 +819,15 @@ setInterval(function(){
                 document.getElementById('varCCC').textContent = CCC;
                 updated = true;
             }
-            
+            if (data.DDD !== undefined && data.DDD !==DDD) {
+                DDD = data.DDD;
+                document.getElementById('varDDD').textContent = DDD;
+                updated = true;
+            }            
+
             if (updated) {
-                updateDDD();
-                addLog('同步', `变量已同步: 光强度=${AAA}, 水温=${BBB}, pH=${CCC}`, 'system'); // AAA/AA1对应光强度值, BBB/AA2对应水温, CCC/AA3对应pH
+                // updateDDD();
+                addLog('同步', `变量已同步: 光强度=${AAA}, 水温=${BBB}, pH=${CCC}`,DO=${DDD}`,  'system'); // AAA/AA1对应光强度值, BBB/AA2对应水温, CCC/AA3对应pH, DDD/AA4对应DO
             }
             
             // 检查并执行控制命令
@@ -861,11 +866,12 @@ setInterval(function(){
             textElement.textContent = text;
         }
 
-        /* ================ 更新DDD变量 ================ */
-        function updateDDD() {
-            DDD = AAA + BBB; // DDD/AA4对应DO
-            document.getElementById('varDDD').textContent = DDD;
-        }
+        /* ================ 更新DDD变量 (有必要时才用！！！）============= */
+        /*     function updateDDD() {
+                DDD = AAA + BBB; // DDD/AA4对应DO
+               document.getElementById('varDDD').textContent = DDD;
+                }
+        */
 
         /* ================ 发送控制命令 ================ */
         async function sendControlCommand(cmd) {
@@ -1133,6 +1139,16 @@ setInterval(function(){
                 variablesUpdated = true;
             }
             
+            // 检查DDD=...格式 (DDD对应DO)
+            const dddMatch = data.match(/DDD=(\d+)/);
+            if (dddMatch && DDD !== parseInt(dddMatch[1])) {
+                DDD = parseInt(dddMatch[1]);
+                document.getElementById('varDDD').textContent = DDD;
+                variables.DDD = DDD;
+                variablesUpdated = true;
+            }
+
+
             if (variablesUpdated) {
                 updateDDD();
                 
@@ -1141,7 +1157,8 @@ setInterval(function(){
                     const allVariables = {
                         AAA: AAA,
                         BBB: BBB,
-                        CCC: CCC
+                        CCC: CCC,
+                        DDD:DDD
                     };
                     updateVariablesOnServer(allVariables).catch(() => {
                         // 错误已经在函数中处理
