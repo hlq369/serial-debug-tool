@@ -6,12 +6,12 @@
     <title>鱼池监控系统 - JMU 多设备同步版</title>
     <meta name="description" content="基于Web Serial API的在线串口调试工具，支持多设备变量同步">
     <style>
+        /* 样式保持不变，确保界面正常显示 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             background-color: #f5f5f5;
@@ -19,13 +19,11 @@
             line-height: 1.4;
             font-size: 13px;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 12px;
         }
-
         .header {
             background: linear-gradient(135deg, #2c3e50, #4a6491);
             color: white;
@@ -35,37 +33,31 @@
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         .header h1 {
             font-size: 1.6rem;
             margin-bottom: 5px;
         }
-
         .header p {
             font-size: 0.9rem;
             opacity: 0.9;
         }
-
         .main-content {
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 12px;
             margin-bottom: 12px;
         }
-
         .left-column {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
-
         .panel {
             background-color: white;
             border-radius: 5px;
             padding: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
         .panel h3 {
             margin-bottom: 10px;
             color: #2c3e50;
@@ -73,18 +65,15 @@
             padding-bottom: 6px;
             font-size: 1rem;
         }
-
         .form-group {
             margin-bottom: 10px;
         }
-
         label {
             display: inline-block;
             margin-bottom: 3px;
             font-weight: 500;
             font-size: 0.85rem;
         }
-
         select, input[type="number"], input[type="text"], textarea {
             padding: 6px 8px;
             border: 1px solid #ddd;
@@ -92,13 +81,11 @@
             font-size: 0.85rem;
             transition: border-color 0.2s;
         }
-
         select:focus, input:focus, textarea:focus {
             outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
-
         button {
             background-color: #3498db;
             color: white;
@@ -111,39 +98,31 @@
             margin-bottom: 6px;
             transition: all 0.2s ease;
         }
-
         button:hover {
             background-color: #2980b9;
         }
-
         button:disabled {
             background-color: #95a5a6;
             cursor: not-allowed;
         }
-
         .danger {
             background-color: #e74c3c;
         }
-
         .danger:hover {
             background-color: #c0392b;
         }
-
         .success {
             background-color: #27ae60;
         }
-
         .success:hover {
             background-color: #229954;
         }
-
         .variable-display {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             margin-bottom: 12px;
         }
-
         .variable-item {
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -151,38 +130,32 @@
             padding: 10px;
             text-align: center;
         }
-
         .variable-name {
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 4px;
             font-size: 0.85rem;
         }
-
         .variable-value {
             font-size: 1.1rem;
             font-weight: bold;
             color: #3498db;
         }
-
         .control-buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin-bottom: 10px;
         }
-
         .control-btn {
             background-color: #9b59b6;
             padding: 8px;
             font-weight: bold;
             font-size: 0.85rem;
         }
-
         .control-btn:hover {
             background-color: #8e44ad;
         }
-
         .sync-status {
             display: inline-block;
             width: 8px;
@@ -199,7 +172,6 @@
         .sync-connecting {
             background-color: #f39c12;
         }
-
         #logContainer {
             height: 680px;
             overflow-y: auto;
@@ -212,66 +184,53 @@
             white-space: pre-wrap;
             word-wrap: break-word;
         }
-
         .log-entry {
             margin-bottom: 3px;
             padding: 1px 0;
             border-bottom: 1px solid #eee;
         }
-
         .log-tx {
             color: #27ae60;
         }
-
         .log-rx {
             color: #3498db;
         }
-
         .log-error {
             color: #e74c3c;
         }
-
         .log-system {
             color: #7f8c8d;
         }
-
         .checkbox-group {
             display: flex;
             align-items: center;
             margin-bottom: 6px;
         }
-
         .checkbox-group input[type="checkbox"] {
             width: auto;
             margin-right: 5px;
         }
-
         .send-group {
             display: flex;
             gap: 6px;
             margin-bottom: 6px;
         }
-
         .send-group input {
             flex: 1;
         }
-
         .send-group button {
             margin: 0;
         }
-
         #sendContent {
             height: 35px;
             resize: none;
             width: 100%;
         }
-
         .config-section {
             margin-top: 12px;
             padding-top: 12px;
             border-top: 1px solid #eee;
         }
-
         .worker-code {
             background-color: #2c3e50;
             color: #ecf0f1;
@@ -283,7 +242,6 @@
             margin-top: 6px;
             line-height: 1.2;
         }
-
         .footer {
             text-align: center;
             margin-top: 15px;
@@ -291,7 +249,6 @@
             color: #7f8c8d;
             font-size: 0.8rem;
         }
-
         .browser-support {
             background-color: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -301,13 +258,11 @@
             color: #856404;
             font-size: 0.85rem;
         }
-
         .browser-support h4 {
             margin-bottom: 4px;
             color: #856404;
             font-size: 0.9rem;
         }
-
         .api-config {
             background-color: #e8f4fd;
             border: 1px solid #b3d9f2;
@@ -316,80 +271,63 @@
             margin-bottom: 12px;
             font-size: 0.85rem;
         }
-
         .api-config h4 {
             margin-bottom: 4px;
             color: #2c3e50;
             font-size: 0.9rem;
         }
-
         .api-config-row {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-top: 6px;
         }
-
         .api-config-row label {
             margin-bottom: 0;
             white-space: nowrap;
         }
-
         .api-config-row input {
             width: 300px;
         }
-
         .api-config-row span {
             white-space: nowrap;
         }
-
         .serial-config-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
         }
-
         .serial-config-grid .form-group {
             margin-bottom: 8px;
         }
-
         .serial-config-grid select {
             width: 150px;
         }
-
         #portStatus {
             width: 150px;
         }
-
         #timeout {
             width: 150px;
         }
-
         .quick-send-content {
             width: 150px;
         }
-
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
-            
             .header h1 {
                 font-size: 1.4rem;
             }
-            
             .header p {
                 font-size: 0.85rem;
             }
-            
             .variable-display, .control-buttons {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
             .serial-config-grid {
                 grid-template-columns: 1fr;
             }
-            
             .api-config-row {
                 flex-direction: column;
                 align-items: flex-start;
@@ -422,6 +360,10 @@
                 <input type="text" id="binId" value="68f5194943b1c97be9715cb4" style="font-family: 'Courier New', monospace; font-size: 10px;">
                 <button onclick="updateBinId()">更新Bin ID</button>
                 <span>状态: <span id="apiStatus">已配置，点击"启用同步"开始使用</span></span>
+            </div>
+            <div style="margin-top: 10px;">
+                <button onclick="testJSONBinConnection()" class="success">测试JSONBin连接</button>
+                <button onclick="viewJSONBinData()">查看JSONBin数据</button>
             </div>
         </div>
 
@@ -652,6 +594,7 @@ setInterval(function(){
 
         // 控制命令执行状态跟踪
         let lastExecutedCommand = { command: '', timestamp: 0 };
+        let lastCommandId = 0; // 用于跟踪命令的唯一ID
 
         // 循环发送显示控制
         document.getElementById('loopSend').addEventListener('change', function() {
@@ -713,6 +656,49 @@ setInterval(function(){
             }
         }
 
+        // 测试JSONBin连接
+        async function testJSONBinConnection() {
+            addLog('调试', '开始测试JSONBin连接...', 'system');
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog('调试', `JSONBin连接成功! 记录ID: ${data.record?.$id || '未知'}`, 'system');
+                    addLog('调试', `当前数据: ${JSON.stringify(data.record)}`, 'system');
+                } else {
+                    addLog('调试', `JSONBin连接失败: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                addLog('调试', `JSONBin连接错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 查看JSONBin数据
+        async function viewJSONBinData() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog('调试', `JSONBin当前数据: ${JSON.stringify(data)}`, 'system');
+                } else {
+                    addLog('调试', `获取数据失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLog('调试', `获取数据错误: ${error.message}`, 'error');
+            }
+        }
+
         /* ================ JSONBin.io 同步功能 ================ */
         function togglePolling() {
             if (!pollingEnabled) {
@@ -731,13 +717,13 @@ setInterval(function(){
             pollingEnabled = true;
             document.getElementById('pollingToggle').textContent = '停止同步';
             updateSyncStatus('connecting', '正在连接JSONBin.io...');
-            addLog('同步', '开始JSONBin.io同步 (12秒/次)', 'system');
+            addLog('同步', '开始JSONBin.io同步 (5秒/次)', 'system');
             
             // 立即获取一次数据
             fetchVariables();
             
-            // 每12秒获取一次数据（符合免费版限制）
-            pollingInterval = setInterval(fetchVariables, 12000);
+            // 每5秒获取一次数据（更频繁的同步）
+            pollingInterval = setInterval(fetchVariables, 5000);
         }
 
         function stopPolling() {
@@ -808,56 +794,66 @@ setInterval(function(){
         }
 
         function updateVariablesFromServer(data) {
-            let updated = false;
+            let variablesUpdated = false;
             
             if (data.AAA !== undefined && data.AAA !== AAA) {
                 AAA = parseFloat(data.AAA);
                 document.getElementById('varAAA').textContent = AAA.toFixed(1);
-                updated = true;
+                variablesUpdated = true;
             }
             
             if (data.BBB !== undefined && data.BBB !== BBB) {
                 BBB = parseFloat(data.BBB);
                 document.getElementById('varBBB').textContent = BBB.toFixed(1);
-                updated = true;
+                variablesUpdated = true;
             }
             
             if (data.CCC !== undefined && data.CCC !== CCC) {
                 CCC = parseFloat(data.CCC);
                 document.getElementById('varCCC').textContent = CCC.toFixed(1);
-                updated = true;
+                variablesUpdated = true;
             }
             
             if (data.DDD !== undefined && data.DDD !== DDD) {
                 DDD = parseFloat(data.DDD);
                 document.getElementById('varDDD').textContent = DDD.toFixed(1);
-                updated = true;
+                variablesUpdated = true;
             }
 
-            if (updated) {
+            if (variablesUpdated) {
                 addLog('同步', `变量已同步: 光强度=${AAA.toFixed(1)}, 水温=${BBB.toFixed(1)}, pH=${CCC.toFixed(1)}, DO=${DDD.toFixed(1)}`, 'system');
             }
             
-            // 检查并执行控制命令 - 修复版
+            // 检查并执行控制命令 - 增强版
             if (data.controlCommand && 
                 data.controlCommand.timestamp && 
-                data.controlCommand.command &&
-                data.controlCommand.source === 'web_control') {
+                data.controlCommand.command) {
                 
                 const currentTime = Date.now();
                 const commandTime = data.controlCommand.timestamp;
+                const commandId = data.controlCommand.id || 0;
                 
-                // 防止重复执行相同的命令（10秒内）
-                if (currentTime - commandTime < 10000 && 
-                    (data.controlCommand.command !== lastExecutedCommand.command || 
-                     commandTime !== lastExecutedCommand.timestamp)) {
-                    
-                    addLog('同步', `检测到新控制命令: ${data.controlCommand.command}`, 'system');
-                    executeControlCommand(data.controlCommand.command);
-                    lastExecutedCommand = {
-                        command: data.controlCommand.command,
-                        timestamp: commandTime
-                    };
+                // 防止重复执行相同的命令（15秒内）
+                if (currentTime - commandTime < 15000) {
+                    // 使用命令ID和命令内容双重检查
+                    if (commandId !== lastCommandId || 
+                        data.controlCommand.command !== lastExecutedCommand.command) {
+                        
+                        addLog('同步', `检测到新控制命令: ${data.controlCommand.command} (ID: ${commandId})`, 'system');
+                        executeControlCommand(data.controlCommand.command);
+                        lastExecutedCommand = {
+                            command: data.controlCommand.command,
+                            timestamp: commandTime
+                        };
+                        lastCommandId = commandId;
+                        
+                        // 执行后清除控制命令
+                        setTimeout(() => clearControlCommand(), 2000);
+                    } else {
+                        addLog('同步', `忽略重复命令: ${data.controlCommand.command}`, 'system');
+                    }
+                } else {
+                    addLog('同步', `命令已过期: ${data.controlCommand.command}`, 'system');
                 }
             }
         }
@@ -920,13 +916,30 @@ setInterval(function(){
             
             try {
                 lastCommandTime = now;
+                lastCommandId++; // 递增命令ID
                 
-                // 直接创建包含控制命令的数据
-                const commandData = {
+                // 首先获取当前数据
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`获取数据失败! status: ${response.status}`);
+                }
+                
+                const currentData = await response.json();
+                
+                // 合并当前数据和新的控制命令
+                const updatedData = {
+                    ...currentData,
                     controlCommand: {
                         command: command,
                         timestamp: Date.now(),
-                        source: 'web_control'
+                        source: 'web_control',
+                        id: lastCommandId // 添加唯一ID
                     }
                 };
                 
@@ -936,7 +949,7 @@ setInterval(function(){
                         'Content-Type': 'application/json',
                         'X-Master-Key': JSONBIN_API_KEY
                     },
-                    body: JSON.stringify(commandData)
+                    body: JSON.stringify(updatedData)
                 });
                 
                 if (!updateResponse.ok) {
@@ -950,7 +963,7 @@ setInterval(function(){
                 else if (command === 'AA4') commandDesc = 'DO';
                 else commandDesc = command;
                 
-                addLog('同步', `控制命令已同步: ${commandDesc}`, 'system');
+                addLog('同步', `控制命令已同步: ${commandDesc} (ID: ${lastCommandId})`, 'system');
             } catch (error) {
                 console.error('同步控制命令失败:', error);
                 throw error;
@@ -978,6 +991,38 @@ setInterval(function(){
                 
             } catch (e) {
                 addLog('错误', '执行控制命令失败: ' + e.message, 'error');
+            }
+        }
+
+        /* ================ 清除控制命令 ================ */
+        async function clearControlCommand() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
+                });
+                
+                if (!response.ok) return;
+                
+                const currentData = await response.json();
+                
+                // 只移除控制命令，保留其他数据
+                const { controlCommand, ...dataWithoutCommand } = currentData;
+                
+                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY
+                    },
+                    body: JSON.stringify(dataWithoutCommand)
+                });
+                
+                addLog('同步', '控制命令已清除', 'system');
+            } catch (error) {
+                console.error('清除控制命令失败:', error);
             }
         }
 
