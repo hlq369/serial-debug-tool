@@ -6,18 +6,400 @@
     <title>鱼池监控系统 - JMU 多设备同步版</title>
     <meta name="description" content="基于Web Serial API的在线串口调试工具，支持多设备变量同步">
     <style>
-        /* 样式保持不变 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        /* ... 其余样式代码保持不变 ... */
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.4;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 12px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 12px 15px;
+            text-align: center;
+            margin-bottom: 12px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .panel {
+            background-color: white;
+            border-radius: 5px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .panel h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #3498db;
+            padding-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: 3px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        select, input[type="number"], input[type="text"], textarea {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .danger {
+            background-color: #e74c3c;
+        }
+
+        .danger:hover {
+            background-color: #c0392b;
+        }
+
+        .success {
+            background-color: #27ae60;
+        }
+
+        .success:hover {
+            background-color: #229954;
+        }
+
+        .variable-display {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .variable-item {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .variable-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+
+        .variable-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .control-btn {
+            background-color: #9b59b6;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .control-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        .sync-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .sync-connected {
+            background-color: #27ae60;
+        }
+        .sync-disconnected {
+            background-color: #e74c3c;
+        }
+        .sync-connecting {
+            background-color: #f39c12;
+        }
+
+        #logContainer {
+            height: 680px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 6px;
+            background-color: #f8f9fa;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            padding: 1px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-tx {
+            color: #27ae60;
+        }
+
+        .log-rx {
+            color: #3498db;
+        }
+
+        .log-error {
+            color: #e74c3c;
+        }
+
+        .log-system {
+            color: #7f8c8d;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .send-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .send-group input {
+            flex: 1;
+        }
+
+        .send-group button {
+            margin: 0;
+        }
+
+        #sendContent {
+            height: 35px;
+            resize: none;
+            width: 100%;
+        }
+
+        .config-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+
+        .worker-code {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            overflow-x: auto;
+            margin-top: 6px;
+            line-height: 1.2;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            color: #7f8c8d;
+            font-size: 0.8rem;
+        }
+
+        .browser-support {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 3px;
+            padding: 8px;
+            margin-bottom: 12px;
+            color: #856404;
+            font-size: 0.85rem;
+        }
+
+        .browser-support h4 {
+            margin-bottom: 4px;
+            color: #856404;
+            font-size: 0.9rem;
+        }
+
+        .api-config {
+            background-color: #e8f4fd;
+            border: 1px solid #b3d9f2;
+            border-radius: 3px;
+            padding: 8px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+
+        .api-config h4 {
+            margin-bottom: 4px;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .api-config-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .api-config-row label {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+
+        .api-config-row input {
+            width: 300px;
+        }
+
+        .api-config-row span {
+            white-space: nowrap;
+        }
+
+        .serial-config-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .serial-config-grid .form-group {
+            margin-bottom: 8px;
+        }
+
+        .serial-config-grid select {
+            width: 150px;
+        }
+
+        #portStatus {
+            width: 150px;
+        }
+
+        #timeout {
+            width: 150px;
+        }
+
+        .quick-send-content {
+            width: 150px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            
+            .header p {
+                font-size: 0.85rem;
+            }
+            
+            .variable-display, .control-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .serial-config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .api-config-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- HTML结构保持不变 -->
         <div class="header">
             <h1>鱼池监控系统 - JMU 多设备同步版</h1>
             <p>基于Web Serial API的在线串口调试工具 - 支持多设备变量同步</p>
@@ -78,8 +460,175 @@
             </div>
         </div>
 
-        <!-- 其余HTML结构保持不变 -->
-        <!-- ... -->
+        <div class="main-content">
+            <!-- 左列：串口配置和发送相关 -->
+            <div class="left-column">
+                <!-- 串口配置面板 -->
+                <div class="panel">
+                    <h3>串口配置</h3>
+                    
+                    <div class="form-group">
+                        <label for="portStatus">串口状态:</label>
+                        <input type="text" id="portStatus" value="未连接" readonly style="color: #e74c3c;">
+                    </div>
+
+                    <div class="serial-config-grid">
+                        <div class="form-group">
+                            <label for="baudRate">波特率:</label>
+                            <select id="baudRate">
+                                <option value="9600" selected>9600</option>
+                                <option value="115200">115200</option>
+                                <option value="57600">57600</option>
+                                <option value="38400">38400</option>
+                                <option value="19200">19200</option>
+                                <option value="14400">14400</option>
+                                <option value="4800">4800</option>
+                                <option value="2400">2400</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dataBits">数据位:</label>
+                            <select id="dataBits">
+                                <option value="7">7</option>
+                                <option value="8" selected>8</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="stopBits">停止位:</label>
+                            <select id="stopBits">
+                                <option value="1" selected>1</option>
+                                <option value="2">2</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="parity">校验位:</label>
+                            <select id="parity">
+                                <option value="none" selected>None</option>
+                                <option value="even">Even</option>
+                                <option value="odd">Odd</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bufferSize">缓冲区大小:</label>
+                            <select id="bufferSize">
+                                <option value="1024">1024</option>
+                                <option value="2048">2048</option>
+                                <option value="4096" selected>4096</option>
+                                <option value="8192">8192</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="flowControl">流控制:</label>
+                            <select id="flowControl">
+                                <option value="none" selected>None</option>
+                                <option value="hardware">Hardware</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 12px;">
+                        <button id="connectBtn" onclick="connectSerial()">连接串口</button>
+                        <button id="disconnectBtn" onclick="disconnectSerial()" disabled class="danger">断开连接</button>
+                    </div>
+                </div>
+
+                <!-- 发送配置面板 -->
+                <div class="panel">
+                    <h3>发送配置</h3>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="hexSend">
+                        <label for="hexSend">HEX发送</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="addNewline">
+                        <label for="addNewline">末尾加回车换行</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="loopSend">
+                        <label for="loopSend">循环发送</label>
+                    </div>
+
+                    <div class="form-group" id="intervalGroup" style="display: none;">
+                        <label for="sendInterval">发送间隔(MS):</label>
+                        <input type="number" id="sendInterval" value="1000" min="100" style="width: 150px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timeout">分包超时(MS):</label>
+                        <input type="number" id="timeout" value="50" min="10">
+                    </div>
+                </div>
+
+                <!-- 发送数据面板 -->
+                <div class="panel">
+                    <h3>发送数据</h3>
+                    <textarea id="sendContent" placeholder="输入要发送的数据..."></textarea>
+                    
+                    <div style="margin-top: 6px;">
+                        <button onclick="sendData()" class="success">发送</button>
+                        <button onclick="clearSend()">清空</button>
+                    </div>
+                </div>
+
+                <!-- 快速发送面板 -->
+                <div class="panel">
+                    <h3>快速发送</h3>
+                    <div id="quickSendGroups">
+                        <div class="send-group">
+                            <input type="text" placeholder="快速发送内容" class="quick-send-content">
+                            <button onclick="quickSend(this)">发送</button>
+                        </div>
+                    </div>
+                    <button onclick="addQuickSend()">添加分组</button>
+                </div>
+            </div>
+
+            <!-- 右列：串口日志 -->
+            <div class="panel">
+                <h3>串口日志</h3>
+                <div style="margin-bottom: 6px;">
+                    <button onclick="clearLog()">清空日志</button>
+                    <button onclick="saveLog()">保存日志</button>
+                    <label style="margin-left: 10px;">
+                        <input type="checkbox" id="autoScroll" checked> 自动滚动
+                    </label>
+                </div>
+                <div id="logContainer"></div>
+            </div>
+        </div>
+
+        <!-- 系统配置面板 -->
+        <div class="panel config-section">
+            <h3>系统配置 - Web Worker代码</h3>
+            <p>以下代码可用于Web Worker中实现自动应答功能：</p>
+            <div class="worker-code">
+addEventListener('message', function ({data}) {
+    if(data.type=='uart_receive')
+    {
+        postMessage({type:'log',data:'消息长度:'+data.data.length});
+        //原文答复
+        postMessage({type:'uart_send',data:data.data});
+    }
+})
+
+setInterval(function(){
+    //定时发送
+    postMessage({type:'uart_send_txt',data:'hello world'});
+},1000);
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>鱼池监控系统 v1.0&copy; 2025.10 - 基于Web Serial API构建</p>
+        </div>
     </div>
 
     <script>
@@ -452,13 +1001,240 @@
             }
         }
 
-        // 其余函数保持不变（串口连接、数据解析等）
-        // ...
+        /* ================ 连接串口 ================ */
+        async function connectSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                const opts = {
+                    baudRate : parseInt(document.getElementById('baudRate').value),
+                    dataBits : parseInt(document.getElementById('dataBits').value),
+                    stopBits : parseInt(document.getElementById('stopBits').value),
+                    parity   : document.getElementById('parity').value,
+                    bufferSize: parseInt(document.getElementById('bufferSize').value),
+                    flowControl: document.getElementById('flowControl').value
+                };
+                await port.open(opts);
 
-        // 原有的串口连接、数据接收等函数保持不变
-        // 由于篇幅限制，这里省略了重复的代码部分
-        // 请确保保留原有的串口连接、数据接收等完整功能
+                /* 写通道 */
+                const encoder        = new TextEncoderStream();
+                writableStreamClosed = encoder.readable.pipeTo(port.writable);
+                writer               = encoder.writable.getWriter();
 
+                /* 读通道 */
+                const decoder        = new TextDecoderStream();
+                readableStreamClosed = port.readable.pipeTo(decoder.writable);
+                reader               = decoder.readable.getReader();
+
+                /* UI */
+                document.getElementById('portStatus').value = '已连接';
+                document.getElementById('portStatus').style.color = '#27ae60';
+                document.getElementById('connectBtn').disabled    = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                addLog('系统', '串口连接成功', 'system');
+
+                readLoop();          // 开始收数据
+            } catch (e) {
+                addLog('错误', '连接失败: ' + e.message, 'error');
+            }
+        }
+
+        /* ================ 断开串口 ================ */
+        async function disconnectSerial() {
+            if (!port) return;
+
+            /* 1. 停读 */
+            if (reader) {
+                await reader.cancel();
+                await readableStreamClosed.catch(() => {});
+                reader = null;
+            }
+            /* 2. 停写 */
+            if (writer) {
+                await writer.close();
+                await writableStreamClosed;
+                writer = null;
+            }
+            /* 3. 关端口 */
+            await port.close();
+            port = null;
+
+            /* 4. 停循环发送 */
+            if (loopSendInterval) {
+                clearInterval(loopSendInterval);
+                loopSendInterval = null;
+            }
+
+            /* UI */
+            document.getElementById('portStatus').value = '未连接';
+            document.getElementById('portStatus').style.color = '#e74c3c';
+            document.getElementById('connectBtn').disabled    = false;
+            document.getElementById('disconnectBtn').disabled = true;
+            addLog('系统', '串口已断开', 'system');
+        }
+
+        /* ================ 读循环 ================ */
+        async function readLoop() {
+            while (true) {
+                try {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) receiveData(value);
+                } catch (e) {
+                    break;   // 正常取消
+                }
+            }
+        }
+
+        /* ================ 接收处理 ================ */
+        function receiveData(data) {
+            const timeout = parseInt(document.getElementById('timeout').value);
+            receiveBuffer += data;
+            if (timeoutTimer) clearTimeout(timeoutTimer);
+            timeoutTimer = setTimeout(() => {
+                if (receiveBuffer.length > 0) {
+                    // 检查是否为变量赋值数据
+                    parseVariableData(receiveBuffer);
+                    
+                    addLog('RX', receiveBuffer, 'rx');
+                    receiveBuffer = '';
+                }
+            }, timeout);
+        }
+
+        /* ================ 解析变量数据 ================ */
+        function parseVariableData(data) {
+            let variablesUpdated = false;
+            const variables = {};
+            
+            // 检查AAA=...格式 (AAA对应光强度值)
+            const aaaMatch = data.match(/AAA=([\d.]+)/); // 匹配浮点数
+            if (aaaMatch && AAA !== parseFloat(aaaMatch[1])) {
+                AAA = parseFloat(aaaMatch[1]); // 转换为float类型
+                document.getElementById('varAAA').textContent = AAA.toFixed(1); // 显示小数点后一位
+                variables.AAA = AAA;
+                variablesUpdated = true;
+            }
+            
+            // 检查BBB=...格式 (BBB对应水温)
+            const bbbMatch = data.match(/BBB=([\d.]+)/); // 匹配浮点数
+            if (bbbMatch && BBB !== parseFloat(bbbMatch[1])) {
+                BBB = parseFloat(bbbMatch[1]); // 转换为float类型
+                document.getElementById('varBBB').textContent = BBB.toFixed(1); // 显示小数点后一位
+                variables.BBB = BBB;
+                variablesUpdated = true;
+            }
+            
+            // 检查CCC=...格式 (CCC对应pH)
+            const cccMatch = data.match(/CCC=([\d.]+)/); // 匹配浮点数
+            if (cccMatch && CCC !== parseFloat(cccMatch[1])) {
+                CCC = parseFloat(cccMatch[1]); // 转换为float类型
+                document.getElementById('varCCC').textContent = CCC.toFixed(1); // 显示小数点后一位
+                variables.CCC = CCC;
+                variablesUpdated = true;
+            }
+            
+            // 检查DDD=...格式 (DDD对应DO)
+            const dddMatch = data.match(/DDD=([\d.]+)/); // 匹配浮点数
+            if (dddMatch && DDD !== parseFloat(dddMatch[1])) {
+                DDD = parseFloat(dddMatch[1]); // 转换为float类型
+                document.getElementById('varDDD').textContent = DDD.toFixed(1); // 显示小数点后一位
+                variables.DDD = DDD;
+                variablesUpdated = true;
+            }
+
+            if (variablesUpdated) {
+                // 如果启用了轮询同步，上传变量到JSONBin.io
+                if (pollingEnabled) {
+                    const allVariables = {
+                        AAA: AAA,
+                        BBB: BBB,
+                        CCC: CCC,
+                        DDD: DDD
+                    };
+                    updateVariablesOnServer(allVariables).catch(() => {
+                        // 错误已经在函数中处理
+                    });
+                }
+            }
+        }
+
+        /* ================ 发送数据 ================ */
+        async function sendData() {
+            if (!writer) {          // 只需判断 writer
+                addLog('错误', '串口未连接', 'error');
+                return;
+            }
+            let content = document.getElementById('sendContent').value;
+            if (!content) return;
+
+            try {
+                let toSend = content;
+                if (document.getElementById('hexSend').checked) {
+                    const hexArr = content.match(/.{1,2}/g) || [];
+                    toSend = new Uint8Array(hexArr.map(b => parseInt(b, 16)));
+                } else if (document.getElementById('addNewline').checked) {
+                    toSend += '\r\n';
+                }
+                await writer.write(toSend);
+                addLog('TX', content, 'tx');
+
+                /* 循环发送 */
+                if (document.getElementById('loopSend').checked) {
+                    const interval = parseInt(document.getElementById('sendInterval').value);
+                    if (loopSendInterval) clearInterval(loopSendInterval);
+                    loopSendInterval = setInterval(() => sendData(), interval);
+                }
+            } catch (e) {
+                addLog('错误', '发送失败: ' + e.message, 'error');
+            }
+        }
+
+        /* ================ 其余函数 ================ */
+        function quickSend(btn) {
+            const input = btn.previousElementSibling;
+            if (input.value) {
+                document.getElementById('sendContent').value = input.value;
+                sendData();
+            }
+        }
+        function addQuickSend() {
+            const div = document.createElement('div');
+            div.className = 'send-group';
+            div.innerHTML = `
+                <input type="text" placeholder="快速发送内容" class="quick-send-content">
+                <button onclick="quickSend(this)">发送</button>`;
+            document.getElementById('quickSendGroups').appendChild(div);
+        }
+        function clearSend() { document.getElementById('sendContent').value = ''; }
+        function clearLog()  { document.getElementById('logContainer').innerHTML = ''; }
+        function saveLog() {
+            const txt = document.getElementById('logContainer').textContent;
+            const blob = new Blob([txt], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `串口日志_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        function addLog(type, content, cls) {
+            const box = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${cls}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${type}: ${content}`;
+            box.appendChild(entry);
+            if (document.getElementById('autoScroll').checked) box.scrollTop = box.scrollHeight;
+        }
+        window.addEventListener('beforeunload', () => { 
+            if (port) disconnectSerial();
+            if (pollingEnabled) stopPolling();
+        });
+        if (!navigator.serial) {
+            document.querySelector('.browser-support').innerHTML = `
+                <h4>浏览器不支持</h4>
+                <p>您的浏览器不支持 Web Serial API，请使用 Chrome 89+、Edge 89+ 或 Opera 76+ 访问此页面。</p>
+            `;
+        }
     </script>
 </body>
 </html>
